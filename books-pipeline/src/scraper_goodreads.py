@@ -30,9 +30,7 @@ class BookData:
     isbn13: Optional[str] = None
     title: Optional[str] = None
     authors: List[str] = field(default_factory=list)
-    
     publisher: Optional[str] = None  # <--- OBJETIVO A RELLENAR
-    
     pub_date: Optional[str] = None
     language: Optional[str] = None
     categories: List[str] = field(default_factory=list)
@@ -193,7 +191,7 @@ def get_book_details(book_id):
         ingestion_date=datetime.now().isoformat()
     )
 
-def get_book_ids_from_search(query, max_pages=1):
+def get_book_ids_from_search(query, max_pages=5):
     found_ids = []
     print(f"--- Buscando '{query}' ---")
     for page in range(1, max_pages + 1):
@@ -210,8 +208,8 @@ def get_book_ids_from_search(query, max_pages=1):
 
 if __name__ == "__main__":
     TERMINO = "Data Science"
-    ids = get_book_ids_from_search(TERMINO, max_pages=1)
-    ids_to_scrape = ids[:5] # Solo 5 para probar
+    ids = get_book_ids_from_search(TERMINO, max_pages=5)
+    ids_to_scrape = ids[:15] # Solo 15 para probar
     
     print(f"\n>>> Procesando {len(ids_to_scrape)} libros...\n")
 

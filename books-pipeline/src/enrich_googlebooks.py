@@ -189,7 +189,7 @@ class GoogleBooksEnricher:
             df = df.reindex(columns=cols)
             
             # Guardar compatible con Excel Español
-            df.to_csv(OUTPUT_FILE, index=False, sep=";", encoding="utf-8-sig")
+            df.to_csv(OUTPUT_FILE)  # -> csv.QUOTE_ALL
             logger.info(f"Archivo generado exitosamente: {OUTPUT_FILE}")
 
 if __name__ == "__main__":

@@ -1,6 +1,16 @@
-﻿gb_id;title;subtitle;authors;publisher;pub_date;language;categories;isbn13;isbn10;price_amount;price_currency
-_1b4nAEACAAJ;Data Science for Business;;Foster Provost | Tom Fawcett;Oreilly & Associates Incorporated;2013;en;Computers;9781449361327;1449361323;;
-tXdBAQAAQBAJ;Data Smart;Using Data Science to Transform Information into Insight;John W. Foreman;John Wiley & Sons;2013-11-12;en;Computers;9781118661468;111866146X;;
-YBKSDwAAQBAJ;Data Science from Scratch;First Principles with Python;Joel Grus;O'Reilly Media;2019-04-12;en;Computers;9781492041108;1492041106;;
-tYp50AEACAAJ;Mindmasters;The Data-Driven Science of Predicting and Changing Human Behavior;SANDRA. MATZ;;2025-01-07;en;Business & Economics;9781647826314;1647826314;;
-vfi3DQAAQBAJ;R for Data Science;Import, Tidy, Transform, Visualize, and Model Data;Hadley Wickham | Garrett Grolemund;"""O'Reilly Media, Inc.""";2016-12-12;en;Computers;9781491910368;1491910364;;
+,gb_id,title,subtitle,authors,publisher,pub_date,language,categories,isbn13,isbn10,price_amount,price_currency
+0,_1b4nAEACAAJ,Data Science for Business,,Foster Provost | Tom Fawcett,Oreilly & Associates Incorporated,2013,en,Computers,9781449361327,1449361323,,
+1,tXdBAQAAQBAJ,Data Smart,Using Data Science to Transform Information into Insight,John W. Foreman,John Wiley & Sons,2013-11-12,en,Computers,9781118661468,111866146X,,
+2,YBKSDwAAQBAJ,Data Science from Scratch,First Principles with Python,Joel Grus,O'Reilly Media,2019-04-12,en,Computers,9781492041108,1492041106,,
+3,tYp50AEACAAJ,Mindmasters,The Data-Driven Science of Predicting and Changing Human Behavior,SANDRA. MATZ,,2025-01-07,en,Business & Economics,9781647826314,1647826314,,
+4,I6y3DQAAQBAJ,R for Data Science,"Import, Tidy, Transform, Visualize, and Model Data",Hadley Wickham | Garrett Grolemund,"""O'Reilly Media, Inc.""",2016-12-12,en,Computers,9781491910344,1491910348,,
+5,vaBDzwEACAAJ,Doing Data Science,Straight Talk from the Frontline,Cathy O'Neil,,,en,Big data,9781449358655,1449358659,,
+6,T2LeAQAACAAJ,Numsense! Data Science for the Layman,No Math Added,Annalyn Ng,Annalyn Ng & Kenneth Soo,2017-03-24,en,,9789811110689,9811110689,,
+7,yijjwAEACAAJ,Python Data Science Handbook,Essential Tools for Working with Data,Jacob T. Vanderplas | Jake VanderPlas,O'Reilly Media,2016,en,Computers,9781491912058,1491912057,,
+8,TFpVDwAAQBAJ,Data Science,,John D. Kelleher | Brendan Tierney,MIT Press,2018-04-13,en,Computers,9780262535434,0262535432,,
+9,GCUqEAAAQBAJ,Becoming a Data Head,"How to Think, Speak, and Understand Data Science, Statistics, and Machine Learning",Alex J. Gutman | Jordan Goldmeier,John Wiley & Sons,2021-04-13,en,Business & Economics,9781119741763,1119741769,27.99,EUR
+10,ayc9EAAAQBAJ,Data Science For Dummies,,Lillian Pierson,John Wiley & Sons,2021-09-15,en,Computers,9781119811558,1119811554,,
+11,82iszgEACAAJ,Ace the Data Science Interview,"201 Real Interview Questions Asked by FAANG, Tech Startups, & Wall Street",Kevin Huo | Nick Singh,,2021,en,Business & Economics,9780578973838,0578973839,,
+12,,The Art of Data Science: A Guide for Anyone Who Works with Data,,,,,,,,,,
+13,-OQ2q5JqOdEC,What Is Data Science?,,Mike Loukides,"""O'Reilly Media, Inc.""",2011-04-10,en,Computers,9781449336097,1449336094,0.0,EUR
+14,74c9zgEACAAJ,Minding the Machines,Building and Leading Data Science and Analytics Teams,Jeremy Adamson,Wiley,2021-07-27,en,Computers,9781119785323,1119785324,,
