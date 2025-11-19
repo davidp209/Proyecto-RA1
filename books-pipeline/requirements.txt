@@ -1,0 +1,10 @@
+extrayendo title, author, rating, ratings_count, book_url, isbn10/isbn13 (si aparece).
+
+
+TITULO = Text__title1
+autor = ContributorLink__name
+rating = data-testid="ratingsCount"
+isbn10 = ?
+
+
+cojo los dos archivos y me quedo con el que tenga mas datos y pongo la url de los que mas fuente tiene.
