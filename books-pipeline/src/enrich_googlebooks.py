@@ -24,12 +24,11 @@ API_URL = "https://www.googleapis.com/books/v1/volumes"
 # ============================================
 # 2) UTILIDADES DE SIMILITUD
 # ============================================
+ #   Calcula una similitud entre 0 y 1 usando SequenceMatcher.
+ #   Se usa para comparar títulos y autores.
+    
 
 def similarity(a, b):
-    """
-    Calcula una similitud entre 0 y 1 usando SequenceMatcher.
-    Se usa para comparar títulos y autores.
-    """
     if not a or not b:
         return 0
     return SequenceMatcher(None, a.lower(), b.lower()).ratio()
@@ -190,7 +189,7 @@ def extract_data(gr_id, item):
 
 
 # ============================================
-# 6) PROCESO PRINCIPAL
+# 6) PROCESO PRINCIPAL (CORREGIDO Y FINAL)
 # ============================================
 
 def main():
@@ -201,7 +200,6 @@ def main():
     # ----------------------------------------
     # A) Cargar IDs ya procesados (idempotencia)
     # ----------------------------------------
-
     processed_ids = set()
     if OUTPUT_FILE.exists():
         try:
@@ -213,7 +211,6 @@ def main():
     # ----------------------------------------
     # B) Cargar todos los libros de Goodreads
     # ----------------------------------------
-
     books = []
     with open(INPUT_FILE, "r", encoding="utf-8") as f:
         for line in f:
@@ -232,7 +229,6 @@ def main():
     # ----------------------------------------
     # C) Procesar cada libro de Goodreads
     # ----------------------------------------
-
     results = []
 
     for i, book in enumerate(books, 1):
@@ -241,7 +237,7 @@ def main():
         first_author = (book.get("authors") or [""])[0]
         isbn13 = book.get("isbn13")
 
-        # Estrategias de búsqueda (las mandamos TODAS)
+        # Estrategias de búsqueda
         queries = [
             f"isbn:{isbn13}" if isbn13 else None,
             f'intitle:"{title}" inauthor:"{first_author}"',
@@ -250,7 +246,7 @@ def main():
 
         google_item = None
 
-        # Intentar cada query hasta que alguna devuelva resultados
+        # --- Bucle de Queries Corregido ---
         for q in queries:
             if not q:
                 continue
@@ -258,19 +254,25 @@ def main():
             all_results = search_api_all(q)
 
             if all_results:
-                google_item = choose_best_result(book, all_results)
-                break
+                # 1. Buscamos si hay un candidato bueno en esta lista
+                candidate = choose_best_result(book, all_results)
+                
+                # 2. SOLO paramos si el candidato es válido.
+                # Si candidate es None (porque los resultados eran malos), seguimos probando queries.
+                if candidate:
+                    google_item = candidate
+                    break 
+        # ----------------------------------
 
         print(f"[{i}/{len(books)}] {title} → "
               f"{'Encontrado' if google_item else 'NO encontrado'}")
 
         results.append(extract_data(book["id"], google_item))
-        time.sleep(0.5)  # pequeña pausa por respeto a la API
+        time.sleep(0.5) # Pausa para respetar a la API
 
     # ----------------------------------------
     # D) Guardar resultados en CSV
     # ----------------------------------------
-
     if results:
         df = pd.DataFrame(results)
         cols = [
@@ -289,7 +291,6 @@ def main():
         )
 
         print("Guardado completado.")
-
 
 # ============================================
 # EJECUCIÓN

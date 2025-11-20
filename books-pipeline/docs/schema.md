@@ -31,7 +31,7 @@
 | **source_preference** | STRING | No | `"goodreads"` | Fuente que ganó la prioridad (`goodreads` o `google`). Determina qué valores se toman en caso de conflicto. |
 | **most_complete_url** | STRING | Sí | `"https://goodreads.com/book/show/12345"` | URL del recurso más completo según heurística de fuente preferida. |
 | **ingestion_date_goodreads** | TIMESTAMP | Sí | `"2023-10-27T12:34:56Z"` | Fecha de extracción original desde Goodreads. |
-| **ingestion_date_google** | TIMESTAMP | Sí | `"2023-10-28T08:12:00Z"` | Fecha de extracción original desde Google Books. |
+| **ingestion_date_google** | TIMESTAMP | Sí | `"2023-10-28T08:12:00Z"` | Fecha de extracción original desde Google Books (puede ser nulo). |
 
 ---
 

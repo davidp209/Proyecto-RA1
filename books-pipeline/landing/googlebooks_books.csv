@@ -3,7 +3,7 @@ gb_id;google_id;title;authors;publisher;pub_date;categories;isbn13;price_amount;
 17682206;tXdBAQAAQBAJ;Data Smart;John W. Foreman;John Wiley & Sons;2013-11-12;Computers;9781118661468;;
 25407018;YBKSDwAAQBAJ;Data Science from Scratch;Joel Grus;O'Reilly Media;2019-04-12;Computers;9781492041108;;
 205905685;tYp50AEACAAJ;Mindmasters;SANDRA. MATZ;;2025-01-07;Business & Economics;9781647826314;;
-33399049;vfi3DQAAQBAJ;R for Data Science;Hadley Wickham | Garrett Grolemund;"""O'Reilly Media, Inc.""";2016-12-12;Computers;9781491910368;;
+33399049;I6y3DQAAQBAJ;R for Data Science;Hadley Wickham | Garrett Grolemund;"""O'Reilly Media, Inc.""";2016-12-12;Computers;9781491910344;;
 17346997;vaBDzwEACAAJ;Doing Data Science;Cathy O'Neil;;;Big data;9781449358655;;
 26457146;yijjwAEACAAJ;Python Data Science Handbook;Jacob T. Vanderplas | Jake VanderPlas;O'Reilly Media;2016;Computers;9781491912058;;
 34213247;T2LeAQAACAAJ;Numsense! Data Science for the Layman;Annalyn Ng;Annalyn Ng & Kenneth Soo;2017-03-24;;9789811110689;;
@@ -11,6 +11,6 @@ gb_id;google_id;title;authors;publisher;pub_date;categories;isbn13;price_amount;
 56357967;GCUqEAAAQBAJ;Becoming a Data Head;Alex J. Gutman | Jordan Goldmeier;John Wiley & Sons;2021-04-13;Business & Economics;9781119741763;27.99;EUR
 56751800;ayc9EAAAQBAJ;Data Science For Dummies;Lillian Pierson;John Wiley & Sons;2021-09-15;Computers;9781119811558;;
 58949285;82iszgEACAAJ;Ace the Data Science Interview;Kevin Huo | Nick Singh;;2021;Business & Economics;9780578973838;;
-26299386;NOT_FOUND;;;;;;;;
+26299386;ZDH9DAEACAAJ;The Art of Data Science;Roger D. Peng | Elizabeth Matsui;;2016-06-08;Business & Economics;9781365061462;;
 13638556;-OQ2q5JqOdEC;What Is Data Science?;Mike Loukides;"""O'Reilly Media, Inc.""";2011-04-10;Computers;9781449336097;0.0;EUR
 57182112;74c9zgEACAAJ;Minding the Machines;Jeremy Adamson;Wiley;2021-07-27;Computers;9781119785323;;

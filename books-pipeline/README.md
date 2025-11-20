@@ -24,9 +24,9 @@ BOOKS-PIPELINE/
 │   └── googlebooks_books.csv → datos enriquecidos desde Google Books
 │
 ├── 📂 src/
-│   ├── goodreads_scraper.py → extracción (scraping) desde Goodreads
-│   ├── googlebooks_books.py → enriquecimiento usando Google Books API
-│   └── merge_books_pipeline.py → integración, limpieza y lógica de negocio (ETL)
+│   ├── scraper_goodreads.py  → extracción (scraping) desde Goodreads
+│   ├── enrich_googlebooks.py → enriquecimiento usando Google Books 
+│   └── integrate_pipeline.py →  integración / merge / normalización
 │
 ├── 📂 standard/
 │   ├── dim_book.parquet → tabla maestra de libros (modelo canónico)
@@ -38,11 +38,9 @@ BOOKS-PIPELINE/
 
 ## 🚀 Cómo Ejecutar
 
-Asegúrate de estar en el entorno virtual y en la raíz del proyecto.
+- Python 3.8+ (especificar versión exacta si aplica)
 
-### 1️⃣ Crear entorno virtual
-
-Instala las dependencias necesarias:
+### 1️⃣ Instalar dependencias:
 
 ```bash
 pip install -r requirements.txt
@@ -54,12 +52,6 @@ pip install -r requirements.txt
 venv\Scripts\activate
 ```
 
-### 3️⃣ Instalar dependencias
-
-```bash
-pip install -r requirements.txt
-```
-
 ## 🚀 Ejecución paso a paso
 
 ### 1️⃣ Scrapear datos de Goodreads
@@ -67,7 +59,7 @@ pip install -r requirements.txt
 Obtiene metadatos, descripciones y ratings mediante scraping.
 
 ```bash
- python src/goodreads_scraper.py
+python src/scraper_goodreads.py
 ```
 
 ### 2️⃣ Enriquecer datos usando Google Books API
@@ -75,7 +67,7 @@ Obtiene metadatos, descripciones y ratings mediante scraping.
 Busca precios e ISBNs faltantes mediante coincidencia difusa (fuzzy matching).
 
 ```bash
-python src/googlebooks_books.py
+python src/enrich_googlebooks.py
 ```
 
 ### 3️⃣ Integrar y normalizar en el modelo canónico
@@ -83,7 +75,7 @@ python src/googlebooks_books.py
 Ejecuta la lógica de fusión ("Survivor Value"), limpieza y deduplicación.
 
 ```bash
-python src/merge_books_pipeline.py
+python src/integrate_pipeline.py
 ```
 
 ## 🗂 Metadatos y configuraciones
