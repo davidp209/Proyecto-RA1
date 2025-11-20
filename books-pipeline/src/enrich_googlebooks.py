@@ -2,196 +2,298 @@ import json
 import time
 import requests
 import pandas as pd
-import logging
+from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Dict, Any, Optional, List
 
-# --- CONFIGURACIÓN ---
-logging.basicConfig(
-    level=logging.INFO, 
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    datefmt="%H:%M:%S"
-)
-logger = logging.getLogger(__name__)
+# ============================================
+# 1) CONFIGURACIÓN
+# ============================================
 
-# Rutas (Detecta automáticamente la carpeta del proyecto)
 BASE_DIR = Path(__file__).resolve().parent.parent / "landing"
 INPUT_FILE = BASE_DIR / "goodreads_books.json"
 OUTPUT_FILE = BASE_DIR / "googlebooks_books.csv"
 
-GOOGLE_API_URL = "https://www.googleapis.com/books/v1/volumes"
-HEADERS = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+# Sesión HTTP persistente (más rápida y eficiente)
+SESSION = requests.Session()
+SESSION.headers.update({"User-Agent": "Mozilla/5.0"})
 
-class GoogleBooksEnricher:
-    def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update(HEADERS)
-        BASE_DIR.mkdir(parents=True, exist_ok=True)
+# Endpoint de Google Books
+API_URL = "https://www.googleapis.com/books/v1/volumes"
 
-    def load_data(self) -> List[Dict]:
-        """Carga datos soportando tanto JSON Array como JSON Lines."""
-        if not INPUT_FILE.exists():
-            logger.error(f"No existe el archivo: {INPUT_FILE}")
-            return []
 
-        logger.info(f"Cargando: {INPUT_FILE}")
-        data = []
-        
-        # Intento 1: Leer línea a línea (JSON Lines - Más común en scraping)
+# ============================================
+# 2) UTILIDADES DE SIMILITUD
+# ============================================
+
+def similarity(a, b):
+    """
+    Calcula una similitud entre 0 y 1 usando SequenceMatcher.
+    Se usa para comparar títulos y autores.
+    """
+    if not a or not b:
+        return 0
+    return SequenceMatcher(None, a.lower(), b.lower()).ratio()
+
+
+# ============================================
+# 3) DESCARGAR TODOS LOS RESULTADOS DE GOOGLE BOOKS
+# ============================================
+
+def search_api_all(query):
+    """
+    Recupera TODOS los resultados posibles de Google Books.
+    Usa paginación (startIndex) hasta que no haya más.
+    
+    Google Books permite máximo 40 resultados por petición.
+    """
+    results = []
+    start = 0
+    max_results = 40  # límite del API
+
+    while True:
         try:
-            with open(INPUT_FILE, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        try:
-                            data.append(json.loads(line))
-                        except json.JSONDecodeError:
-                            continue # Saltar líneas rotas
-            if data: return data
+            # Petición
+            res = SESSION.get(
+                API_URL,
+                params={
+                    "q": query,
+                    "printType": "books",
+                    "maxResults": max_results,
+                    "startIndex": start
+                },
+                timeout=5
+            )
+
+            # Rate limit → espera y reintenta
+            if res.status_code == 429:
+                time.sleep(2)
+                continue
+
+            # Error → salimos
+            if res.status_code != 200:
+                break
+
+            data = res.json()
+            items = data.get("items", [])
+
+            # Si no hay más resultados → terminamos
+            if not items:
+                break
+
+            results.extend(items)
+
+            # Si recibimos menos de 40, no hay más páginas
+            if len(items) < max_results:
+                break
+
+            # Siguiente página
+            start += max_results
+            time.sleep(0.3)
+
         except Exception:
-            pass # Si falla, probamos el método estándar
+            break
 
-        # Intento 2: Leer todo el archivo como un bloque JSON
-        try:
-            with open(INPUT_FILE, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return data
-        except json.JSONDecodeError:
-            logger.error("El archivo JSON no tiene un formato válido.")
-            return []
+    return results
 
-    def _clean_str(self, text: str) -> str:
-        """Limpia cadenas para evitar errores en búsquedas."""
-        if not text: return ""
-        return text.replace('"', '').replace("'", "").replace("“", "").replace("”", "").strip()
 
-    def search_api(self, query: str, retries: int = 2) -> Optional[Dict]:
-        """Consulta la API con manejo de Rate Limit."""
-        params = {"q": query, "maxResults": 1, "printType": "books", "country": "ES"}
-        
-        for attempt in range(retries + 1):
-            try:
-                response = self.session.get(GOOGLE_API_URL, params=params, timeout=10)
-                
-                if response.status_code == 429: # Rate limit
-                    wait = 2 ** attempt
-                    logger.warning(f"Rate limit. Esperando {wait}s...")
-                    time.sleep(wait)
-                    continue
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    if "items" in data:
-                        return data["items"][0]
-                    return None # No resultados
-                
-            except requests.RequestException as e:
-                logger.error(f"Error de red: {e}")
-        
-        return None
+# ============================================
+# 4) ELEGIR EL MEJOR RESULTADO (MATCH)
+# ============================================
 
-    def find_book(self, book: Dict) -> Optional[Dict]:
-        """
-        Estrategia de búsqueda en cascada (Fallback).
-        Prioridad: ISBN13 -> ISBN10 -> Título+Autor -> Título
-        """
-        
+def choose_best_result(gr_book, results):
+    """
+    Evalúa todos los resultados devueltos por Google Books
+    y selecciona el que más se parece al libro de Goodreads.
 
-        title = self._clean_str(book.get("title", ""))
-        isbn13 = book.get("isbn13")
-        isbn10 = book.get("isbn")
-        
-        authors = book.get("authors", [])
-        author = self._clean_str(authors[0]) if authors else ""
+    Criterios usados (modelo recomendado):
+      +100 si ISBN_13 coincide EXACTO
+      +80  si ISBN_10 coincide EXACTO
+      +50 * similitud de título
+      +30 * similitud de autor
+    """
+    best = None
+    best_score = 0
 
-        # Definir estrategias
-        strategies = []
-        if isbn13: strategies.append(f"isbn:{isbn13}")
-        if isbn10: strategies.append(f"isbn:{isbn10}")
-        if title and author: strategies.append(f'intitle:"{title}" inauthor:"{author}"')
-        if title: strategies.append(f'intitle:"{title}"')
+    # Campos del libro de Goodreads
+    gr_title = gr_book.get("title", "")
+    gr_author = (gr_book.get("authors") or [""])[0]
+    gr_isbn13 = gr_book.get("isbn13")
+    gr_isbn10 = None
+    if gr_book.get("isbn13") and len(gr_book["isbn13"]) == 10:
+        gr_isbn10 = gr_book["isbn13"]
 
-        for query in strategies:
-            result = self.search_api(query)
-            if result:
-                logger.info(f"Encontrado por: {query}")
-                return result
-        
-        logger.warning(f"NO ENCONTRADO: {title}")
-        return None
-
-    def extract_fields(self, gr_id: str, item: Dict) -> Dict[str, Any]:
-        """Extrae y limpia los datos finales."""
+    # Evaluar cada resultado de Google
+    for item in results:
         vol = item.get("volumeInfo", {})
-        sale = item.get("saleInfo", {})
-        
-        # Identificadores
-        ids = {x.get("type"): x.get("identifier") for x in vol.get("industryIdentifiers", [])}
-
-        # Precio
-        price = sale.get("listPrice") or sale.get("retailPrice")
-        amount = price.get("amount") if price else None
-        currency = price.get("currencyCode") if price else None
-        
-        # Formateo de listas con " | " para seguridad en CSV
-        authors_str = " | ".join(vol.get("authors", [])) if vol.get("authors") else None
-        cats_str = " | ".join(vol.get("categories", [])) if vol.get("categories") else None
-
-        return {
-            "gb_id": item.get("id"),
-            "title": vol.get("title"),
-            "subtitle": vol.get("subtitle"),
-            "authors": authors_str,
-            "publisher": vol.get("publisher"),
-            "pub_date": vol.get("publishedDate"),
-            "language": vol.get("language"),
-            "categories": cats_str,
-            "isbn13": ids.get("ISBN_13"),
-            "isbn10": ids.get("ISBN_10"),
-            "price_amount": amount,
-            "price_currency": currency
+        ids = {
+            x.get("type"): x.get("identifier")
+            for x in vol.get("industryIdentifiers", [])
         }
 
-    def run(self):
-        books = self.load_data()
-        if not books: return
+        score = 0
 
-        logger.info(f"Procesando {len(books)} libros...")
-        enriched_data = []
+        # 1) Coincidencia EXACTA de ISBN (criterio más fuerte)
+        if gr_isbn13 and ids.get("ISBN_13") == gr_isbn13:
+            score += 100
 
-        for i, book in enumerate(books, 1):
-            logger.info(f"[{i}/{len(books)}] Buscando: {book.get('title')}")
-            
-            google_item = self.find_book(book)
-            time.sleep(0.5) # Respetar API
+        if gr_isbn10 and ids.get("ISBN_10") == gr_isbn10:
+            score += 80
 
-            if google_item:
-                parsed = self.extract_fields(book.get("id"), google_item)
-                enriched_data.append(parsed)
-            else:
-                # Guardar registro vacío para trazabilidad
-                enriched_data.append({
-                    "gb_id": None,
-                    "title": book.get("title"),
-                    "authors": None
-                })
+        # 2) Similaridad de título
+        score += similarity(gr_title, vol.get("title", "")) * 50
 
-        # Guardar CSV
-        if enriched_data:
-            df = pd.DataFrame(enriched_data)
-            
-            # Ordenar columnas
-            cols = [
-                "gb_id", "title", "subtitle", "authors", "publisher", 
-                "pub_date", "language", "categories", "isbn13", 
-                "isbn10", "price_amount", "price_currency"
-            ]
-            # Asegurar que existan las columnas
-            df = df.reindex(columns=cols)
-            
-            # Guardar compatible con Excel Español
-            df.to_csv(OUTPUT_FILE)  # -> csv.QUOTE_ALL
-            logger.info(f"Archivo generado exitosamente: {OUTPUT_FILE}")
+        # 3) Similaridad de autor
+        authors_list = vol.get("authors", [""])
+        if authors_list:
+            score += similarity(gr_author, authors_list[0]) * 30
+
+        # Guardar el mejor resultado encontrado
+        if score > best_score:
+            best_score = score
+            best = item
+
+    return best
+
+
+# ============================================
+# 5) EXTRAER DATOS LIMPIOS DEL RESULTADO GOOGLE BOOKS
+# ============================================
+
+def extract_data(gr_id, item):
+    """
+    Convierte un resultado de Google Books a un diccionario limpio.
+    Si no encuentra nada, marca NOT_FOUND.
+    """
+    if not item:
+        return {"gb_id": gr_id, "google_id": "NOT_FOUND"}
+
+    vol = item.get("volumeInfo", {})
+    sale = item.get("saleInfo", {})
+
+    ids = {x.get("type"): x.get("identifier")
+           for x in vol.get("industryIdentifiers", [])}
+
+    price = sale.get("listPrice") or sale.get("retailPrice") or {}
+
+    return {
+        "gb_id": gr_id,
+        "google_id": item.get("id"),
+        "title": vol.get("title"),
+        "authors": " | ".join(vol.get("authors", [])),
+        "publisher": vol.get("publisher"),
+        "pub_date": vol.get("publishedDate"),
+        "categories": " | ".join(vol.get("categories", [])) if vol.get("categories") else None,
+        "isbn13": ids.get("ISBN_13"),
+        "price_amount": price.get("amount"),
+        "price_currency": price.get("currencyCode")
+    }
+
+
+# ============================================
+# 6) PROCESO PRINCIPAL
+# ============================================
+
+def main():
+    if not INPUT_FILE.exists():
+        print("ERROR: no existe goodreads_books.json")
+        return
+
+    # ----------------------------------------
+    # A) Cargar IDs ya procesados (idempotencia)
+    # ----------------------------------------
+
+    processed_ids = set()
+    if OUTPUT_FILE.exists():
+        try:
+            df_old = pd.read_csv(OUTPUT_FILE, sep=";", dtype=str)
+            processed_ids = set(df_old["gb_id"])
+        except:
+            pass
+
+    # ----------------------------------------
+    # B) Cargar todos los libros de Goodreads
+    # ----------------------------------------
+
+    books = []
+    with open(INPUT_FILE, "r", encoding="utf-8") as f:
+        for line in f:
+            if not line.strip():
+                continue
+            b = json.loads(line)
+            if b["id"] not in processed_ids:
+                books.append(b)
+
+    print(f"Se procesarán {len(books)} libros nuevos de Goodreads")
+
+    if not books:
+        print("Todo al día, no hay libros nuevos.")
+        return
+
+    # ----------------------------------------
+    # C) Procesar cada libro de Goodreads
+    # ----------------------------------------
+
+    results = []
+
+    for i, book in enumerate(books, 1):
+
+        title = book.get("title")
+        first_author = (book.get("authors") or [""])[0]
+        isbn13 = book.get("isbn13")
+
+        # Estrategias de búsqueda (las mandamos TODAS)
+        queries = [
+            f"isbn:{isbn13}" if isbn13 else None,
+            f'intitle:"{title}" inauthor:"{first_author}"',
+            f'intitle:"{title}"'
+        ]
+
+        google_item = None
+
+        # Intentar cada query hasta que alguna devuelva resultados
+        for q in queries:
+            if not q:
+                continue
+
+            all_results = search_api_all(q)
+
+            if all_results:
+                google_item = choose_best_result(book, all_results)
+                break
+
+        print(f"[{i}/{len(books)}] {title} → "
+              f"{'Encontrado' if google_item else 'NO encontrado'}")
+
+        results.append(extract_data(book["id"], google_item))
+        time.sleep(0.5)  # pequeña pausa por respeto a la API
+
+    # ----------------------------------------
+    # D) Guardar resultados en CSV
+    # ----------------------------------------
+
+    if results:
+        df = pd.DataFrame(results)
+        cols = [
+            "gb_id", "google_id", "title", "authors", "publisher",
+            "pub_date", "categories", "isbn13",
+            "price_amount", "price_currency"
+        ]
+
+        df.to_csv(
+            OUTPUT_FILE,
+            sep=";",
+            mode="a",
+            index=False,
+            header=not OUTPUT_FILE.exists(),
+            columns=cols
+        )
+
+        print("Guardado completado.")
+
+
+# ============================================
+# EJECUCIÓN
+# ============================================
 
 if __name__ == "__main__":
-    enricher = GoogleBooksEnricher()
-    enricher.run()
+    main()
