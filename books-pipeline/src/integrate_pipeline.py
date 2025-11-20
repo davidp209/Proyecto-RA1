@@ -269,7 +269,7 @@ def merge_records(row_good: Dict, row_google: Dict) -> Dict:
     title = choose_survivor_value(title_gd, title_gg)
     publisher = choose_survivor_value(normalize_str(row_good.get("publisher")), normalize_str(row_google.get("publisher") if row_google else None))
 
-    # Heurística de preferencia de fuente
+    # Mejor Calidad de los datos
     score_gd = sum(1 for v in [title_gd, auth_gd, pg, row_good.get("num_pages")] if v)
     score_gg = sum(1 for v in [title_gg, auth_gg, pg2, p_amt, isbn13_gg] if v)
     pref = "goodreads" if score_gd >= score_gg else "google"
@@ -419,13 +419,18 @@ def run_pipeline():
     metrics = {
         "rows_input_goodreads": len(df_good),
         "rows_output": len(df_final),
-        "matched_with_google": sum(1 for d in detail_rows if d["from_google"])
+        "matched_with_google": sum(1 for d in detail_rows if d["from_google"]),
+        "percent_with_isbn13": round(100 * df_final["isbn13"].notnull().sum() / len(df_final), 2),
+        "percent_with_isbn10": round(100 * df_final["isbn10"].notnull().sum() / len(df_final), 2),
+        "percent_with_categories": round(100 * df_final["categories"].notnull().sum() / len(df_final), 2),
+        "percent_with_pub_date": round(100 * df_final["pub_date"].notnull().sum() / len(df_final), 2),
+        "percent_with_description": round(100 * df_final["description"].notnull().sum() / len(df_final), 2),
+        "duplicates_removed": len(merged_rows) - len(df_final),  # antes de drop_duplicates
+        "source_preference_counts": df_final["source_preference"].value_counts().to_dict()
     }
     
-    with open(METRICS, 'w') as f:
-        json.dump(metrics, f, indent=2)
-
-
+    with open(METRICS, 'w', encoding='utf-8') as f:
+        json.dump(metrics, f, indent=2, ensure_ascii=False)
 
     print(f"[FIN] Proceso completado. Filas finales: {len(df_final)}")
 

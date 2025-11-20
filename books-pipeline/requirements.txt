@@ -1,5 +1,14 @@
+# --- Dependencias para Books-Pipeline ---
+
+# Scraping de Goodreads
 requests>=2.31.0
 beautifulsoup4>=4.12.2
+
+# Procesamiento y análisis de datos
 pandas>=2.2.0
+numpy>=1.25.0
 pyarrow>=12.0.0
-lxml>=4.9.3
+
+# Utilidades
+python-dateutil>=2.9.0
+python-dotenv>=1.0.0

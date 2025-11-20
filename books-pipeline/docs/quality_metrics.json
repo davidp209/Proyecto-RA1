@@ -1,5 +1,15 @@
 {
   "rows_input_goodreads": 15,
   "rows_output": 15,
-  "matched_with_google": 15
+  "matched_with_google": 15,
+  "percent_with_isbn13": 93.33,
+  "percent_with_isbn10": 0.0,
+  "percent_with_categories": 100.0,
+  "percent_with_pub_date": 100.0,
+  "percent_with_description": 100.0,
+  "duplicates_removed": 0,
+  "source_preference_counts": {
+    "goodreads": 14,
+    "google": 1
+  }
 }
